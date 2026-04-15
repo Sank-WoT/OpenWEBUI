@@ -1,7 +1,7 @@
 <!-- src/lib/components/chat/Settings/UserParameters.svelte -->
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { settings } from '$lib/stores';
+	import { settings, user } from '$lib/stores';
   
 	const i18n = getContext('i18n');
 	let { saveSettings }: { saveSettings?: () => Promise<void> } = $props();
@@ -15,9 +15,6 @@
 	let vaultKeys = $state<string[]>([]);
 	let vaultLoading = $state(false);
 	let vaultError = $state<string | null>(null);
-	
-	// Путь в Vault (можно вынести в настройки пользователя)
-	const VAULT_PATH = '40serobabovas@region.cbr.ru';
   
 	// Загрузка ключей при монтировании
 	$effect(() => {
@@ -29,9 +26,8 @@
 	  vaultError = null;
 	  
 	  try {
-		const encodedPath = encodeURIComponent(VAULT_PATH);
-		const response = await fetch(`/api/v1/vault/keys/${encodedPath}`, {
-		  credentials: 'include' // 🔑 отправляет session cookie
+		const response = await fetch(`/api/v1/vault/keys`, {
+		  credentials: 'include'
 		});
 		
 		if (!response.ok) {
@@ -59,8 +55,7 @@
 	  if (!key) return;
   
 	  try {
-		const encodedPath = encodeURIComponent(VAULT_PATH);
-		const response = await fetch(`/api/v1/vault/data/${encodedPath}`, {
+		const response = await fetch(`/api/v1/vault/data`, {
 		  method: 'PUT',
 		  headers: { 'Content-Type': 'application/json' },
 		  credentials: 'include',
@@ -93,9 +88,8 @@
 	  if (!confirm(`Delete parameter "${key}" from Vault?`)) return;
 	  
 	  try {
-		const encodedPath = encodeURIComponent(VAULT_PATH);
 		const response = await fetch(
-		  `/api/v1/vault/data/${encodedPath}?key=${encodeURIComponent(key)}`, 
+		  `/api/v1/vault/data?key=${encodeURIComponent(key)}`,
 		  {
 			method: 'DELETE',
 			credentials: 'include'
@@ -144,7 +138,12 @@
 		</div>
 		
 		<p class="text-xs {$settings?.highContrastMode ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}">
-		  {$i18n.t('Stored in Vault:')} <code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">{VAULT_PATH}</code>
+		  {$i18n.t('Stored in Vault:')}
+		  {#if $user?.email}
+			<code class="bg-gray-100 dark:bg-gray-800 px-1 rounded">{$user.email}</code>
+		  {:else}
+			<span class="italic">{$i18n.t('Loading...')}</span>
+		  {/if}
 		</p>
   
 		{#if vaultLoading}

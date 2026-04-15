@@ -83,6 +83,12 @@ ENV OPENAI_API_KEY="" \
     DO_NOT_TRACK=true \
     ANONYMIZED_TELEMETRY=false
 
+## HashiCorp Vault (user parameters: open_webui/routers/vault.py) ##
+# Override at runtime: -e VAULT_ADDR=... -e VAULT_ROOT_TOKEN_ID=...
+ENV VAULT_ADDR="http://localhost:8200" \
+    VAULT_ROOT_TOKEN_ID="my-dev-token-123" \
+    VAULT_KV_MOUNT="kv"
+
 #### Other models #########################################################
 ## whisper TTS model settings ##
 ENV WHISPER_MODEL="base" \
