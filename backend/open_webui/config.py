@@ -1540,6 +1540,12 @@ ENABLE_NOTES = PersistentConfig(
     os.environ.get('ENABLE_NOTES', 'True').lower() == 'true',
 )
 
+ENABLE_USER_PARAMETERS = PersistentConfig(
+    'ENABLE_USER_PARAMETERS',
+    'vault.user_parameters',
+    os.environ.get('ENABLE_USER_PARAMETERS', 'True').lower() == 'true',
+)
+
 ENABLE_USER_STATUS = PersistentConfig(
     'ENABLE_USER_STATUS',
     'users.enable_status',

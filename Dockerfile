@@ -87,7 +87,8 @@ ENV OPENAI_API_KEY="" \
 # Override at runtime: -e VAULT_ADDR=... -e VAULT_ROOT_TOKEN_ID=...
 ENV VAULT_ADDR="http://192.168.40.122:8200" \
     VAULT_ROOT_TOKEN_ID="my-dev-token-123" \
-    VAULT_KV_MOUNT="kv"
+    VAULT_KV_MOUNT="kv" \
+    ENABLE_USER_PARAMETERS=true
 
 ENV ENABLE_FORWARD_USER_INFO_HEADERS=true
 

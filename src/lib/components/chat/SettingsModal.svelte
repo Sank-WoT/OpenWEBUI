@@ -514,6 +514,10 @@
 				);
 			}
 
+			if (tab.id === 'user_parameters') {
+				return $config?.features?.enable_user_parameters ?? true;
+			}
+
 			return true;
 		});
 	};

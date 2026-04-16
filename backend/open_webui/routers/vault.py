@@ -3,11 +3,17 @@ import os
 from urllib.parse import quote
 
 import httpx
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 
 from open_webui.utils.auth import get_verified_user
 
 router = APIRouter(tags=["vault"])
+
+
+async def get_vault_user(request: Request, user=Depends(get_verified_user)):
+    if not request.app.state.config.ENABLE_USER_PARAMETERS:
+        raise HTTPException(status_code=404, detail="Not found")
+    return user
 
 
 def _kv_mount() -> str:
@@ -31,8 +37,22 @@ def _vault_data_url(vault_addr: str, path: str) -> str:
     return f"{vault_addr}/v1/{mount}/data/{encoded}"
 
 
+async def _ensure_kv_secret_exists(
+    client: httpx.AsyncClient, vault_url: str, headers: dict
+) -> None:
+    """Create an empty KV v2 secret at vault_url if it does not exist."""
+    response = await client.get(vault_url, headers=headers)
+    if response.status_code == 200:
+        return
+    if response.status_code == 404:
+        post = await client.post(vault_url, headers=headers, json={"data": {}})
+        post.raise_for_status()
+        return
+    response.raise_for_status()
+
+
 @router.get("/keys")
-async def get_vault_keys(user=Depends(get_verified_user)):
+async def get_vault_keys(user=Depends(get_vault_user)):
     """List key names in the current user's Vault KV secret (values not returned)."""
     vault_addr = os.getenv("VAULT_ADDR", "http://localhost:8200")
     vault_token = os.getenv("VAULT_ROOT_TOKEN_ID")
@@ -53,7 +73,8 @@ async def get_vault_keys(user=Depends(get_verified_user)):
             response = await client.get(vault_url, headers=headers)
 
             if response.status_code == 404:
-                return {"keys": []}
+                await _ensure_kv_secret_exists(client, vault_url, headers)
+                response = await client.get(vault_url, headers=headers)
 
             response.raise_for_status()
             data = response.json()
@@ -69,7 +90,7 @@ async def get_vault_keys(user=Depends(get_verified_user)):
 @router.put("/data")
 async def save_vault_data(
     form_data: dict,
-    user=Depends(get_verified_user),
+    user=Depends(get_vault_user),
 ):
     """
     Merge one key/value into the current user's Vault KV secret.
@@ -124,7 +145,7 @@ async def save_vault_data(
 @router.delete("/data")
 async def delete_vault_key(
     key: str,
-    user=Depends(get_verified_user),
+    user=Depends(get_vault_user),
 ):
     """Remove one key from the current user's Vault KV secret."""
     vault_addr = os.getenv("VAULT_ADDR", "http://localhost:8200")
